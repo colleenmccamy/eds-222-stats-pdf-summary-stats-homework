@@ -1,0 +1,302 @@
+---
+title: "EDS 222: Assignment 02 (due: Oct 13, 9am)"
+author: "Colleen McCamy collaborators Michelle Lam and Alex Reed"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_html: default
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Load all the packages needed here
+library(tidyverse)
+library(readr)
+library(gt)
+library(tufte)
+library(cowplot)
+library(ggplot2)
+
+# Set your filepaths here! Or, set this up as an .Rproj if you'd like.
+rootdir <- ("/Users/colleenmccamy/Documents/MEDS/EDS_222_Stats")
+datadir <- file.path(rootdir,"data","HW2") # The data you'll need are on Taylor, as usual
+setwd(file.path(rootdir,"homework","HW2"))
+```
+
+# Question 1: Probability density functions in `R`
+
+`R` has many built-in functions that let you describe, analyze, and sample from common probability density functions. For example, if you type `?stats::Normal` in your console, you'll see documentation on all the functions relevant to the normal distribution.[^1] These functions include:
+
+[^1]: Recall that the normal distribution is a family of distributions that are symmetric and do not have long tails. They each have different means $\mu$ and standard deviations $\sigma$.
+
+-   `dnorm(x, mean = 0, sd = 1)`, which returns the *density* of the normal distribution evaluated at whatever values you pass in via `x`. You can think of the output of `dnorm()` as the *height* of the normal pdf at the value `x`. Note that this function defaults to a normal distribution with $\mu = 0$ and $\sigma = 1$, but you can of course change that.
+
+-   `pnorm(q, mean = 0, sd = 1)`, which returns the *cumulative probability* of the normal distribution evaluated at whatever values you pass in via `q`. You can think of the output of `pnorm()` as the *area* under the pdf to the left of the value `q`. Again, note the default distribution parameters $\mu$ and $\sigma$.
+
+## Question 1.1
+
+```{R, echo = T}
+x = seq(-4, 4, 0.01)
+```
+
+Use `dnorm()` to compute the density of the normal pdf for all values in the `x` vector generated above, using $\mu = 0$ and $\sigma = 1$. Use `geom_polygon()`, `geom_line()`, or `geom_point()` (take your pick) to plot this pdf over the support given in `x`.
+
+```{R, echo = TRUE, message=FALSE, warning=FALSE}
+
+#getting density of the normal pdf for all values of 'x'
+x_dnorm <- dnorm(x = x, 
+                 mean = 0, 
+                 sd = 1)
+#storing x and density values in a dataframe
+df_x_dorm <- data.frame(x, x_dnorm)
+
+#plotting the dataframe
+ggplot(df_x_dorm, aes(x = x, y = x_dnorm)) +
+  geom_line(color = "#b52b8c")
+
+```
+
+## Question 1.2
+
+Use the densities you generated in 1.1 to calculate the probability that a random variable distributed normally with mean 0 and standard deviation 1 falls between -2 and 2.[^2]
+
+[^2]: Hint: Remember that $$ Pr(A\leq x \leq B) = \int_A^B f(x)dx $$ where the integral is a fancy way to tell you to sum up $f(x)$ over values of $x$ from $A$ to $B$.
+
+**The probability that a random variable distributed normally falls between -2 and 2 is 95.45%. I understand that using pnorm() below is not using the densities generated above in 1.1 but this function calculates a more accurate probability if we wanted to use the densities generated above we sum all of the dnorm() filtered for values between -2 and 2 and multiply by 0.01 to find the area.**
+
+```{r}
+
+#finding probability that it falls within 2
+prob_2 <- pnorm(2, mean = 0, sd = 1, lower.tail = TRUE)
+prob_2
+
+#finding the probability that it falls under negagive 2
+prob_neg2 <- pnorm(-2, mean = 0, sd = 1, lower.tail = TRUE)
+prob_neg2
+
+# subtracting the probability that it falls under negative two by two to ensure to find the probability of a random variable that falls between the two
+prob_neg2_2 <- prob_2 - prob_neg2
+prob_neg2_2
+
+```
+
+## Question 1.3
+
+Suppose $\sigma=2$ instead. Qualitatively, how would your answer to Question 1.2 change? Why?
+
+**If the standard deviation was equal to 2 instead of 1, the probability that a random variable normally distributed would be a lower probability.**
+
+**Qualitatively, this is because changing the standard deviation would change the shape of the graph and the distribution would be flatter and a wider bell shape curve. Thus, the area under the line would be greater for the distribution to the left of -2 on the x-axis and to the right of 2 on the x-axis.**
+
+**Therefore, the probability of a random variable normally distributed falling between -2 and 2 would decrease as the total area of the graph is equal to 1. Given this information and that the area under the line between -2 and 2 is proportionally less compared to the entire area with a standard deviation equal to 2 instead of a standard deviation equal to 1, there is a lower probability.**
+
+## Question 1.4
+
+An analogous set of functions computes densities and probabilities for the **log normal** distribution. These functions are `dlnorm()` and `plnorm()` and operate as above for the normal distribution functions.
+
+Use `plnorm()` under default parameters to compute the probability that a random variable distributed log normal takes on a value above 2. Use `pnorm()` to compute the corresponding probability for the normal distribution under default parameters. Why are these values so different?
+
+```{r}
+#using plnorm() to compute probability that it takes on a value above 2 by subtracting the area under 2 found by plnorm() from 1 the total area
+plnorm_above2 <- 1 - plnorm(2, mean = 0, sd = 1)
+plnorm_above2
+
+#using pnorm() to compute the probability that it takes on a value above 2 and subtracting it from the entire of 1
+pnorm_above2 <- 1 - pnorm(2, mean = 0, sd =1)
+pnorm_above2
+
+```
+
+**As different distributions provide different shapes, the probability that a random variable distributed log normal is above 2 is different than the probability that random variable distributed normally is above 2 is because the shape of the distributions are different and there is a difference in the tails and the skews.**
+
+**For a distributed log normal, there is zero probability that a random variable is below zero, and thus the area under the line above 2 is larger compared to the area under the line for a normal distribution, as the total area for both is equal to 1.**
+
+# Question 2: Climate summary statistics
+
+In the following questions, you'll be working with climate data from Colombia. These data were obtained from the [ERA5 database](https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5), a product made available by the European Centre for Medium-Range Weather Forecast. The high-resolution hourly gridded data were aggregated to the municipality by month level -- that is, each observation in these data report a monthly average temperature value and a monthly cumulative precipitation value for one of the 1,123 municipalities across the country.[^3]
+
+[^3]: Note: The computational techniques we use to go from raw, spatial, gridded data to a tabular dataset at an administrative level are really valuable for environmental data science. Between Ruth and I, we're hoping to cover some of these topics later in the quarter!
+
+These data -- stored in `colombia_climate.csv` -- cover all municipalities for the period 1996 to 2015. Climate scientists tend to describe the "climate" of a location as the probability density function of a large set of climate variables over about a 30 year period. We only have 20 years, but we will consider our sample as randomly drawn temperature and precipitation realizations from the "climate" p.d.f. over this period. We are aiming to draw conclusions about the Colombian climate using this sample of temperature and precipitation observations.
+
+## Question 2.1
+
+Read these data into `R` using the `read.csv()` function.[^4]
+
+[^4]: See the README.rtf file for details on the variables in `colombia_climate.csv`.
+
+For each of the temperature and rainfall variables, create a histogram that shows the distribution of the variable across the entire sample. For each variable, answer the following questions:
+
+-   Is the distribution symmetric or skewed?
+-   Is there a long tail (or two), or does this distribution look approximately normally distributed?
+-   Is the distribution unimodal, bimodal, or multimodal?
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+**Precipitation Variable:**
+
+-   **The distribution is asymmetric and skewed right.**
+
+-   **There is a longer tail as rainfall increases. Thus, as millimeters of precipitation increased with the number of occurrences decreased disproportionately to the number of occurrences before the mode.**
+
+-   **The distribution is unimodal.**
+
+**Temperature Variable:**
+
+-   **The distribution is asymmetric and skewed right.**
+
+-   **This distribution does not look approximately normally distributed as there appears to a short tail on the right, given that counts for values of temperature above 24 degrees is a considered a tail.**
+
+-   **The distribution is bimodal given that the values with a count of about 10,000 is the second mode.**
+
+```{r, fig.fullwidth=TRUE, fig.height=4, message=FALSE, warning=FALSE}
+colombia_climate <- read_csv("~/Documents/MEDS/EDS_222_Stats/data/HW2/colombia_climate.csv")
+
+#preciptation histogram
+precip_histogram <- ggplot(data = colombia_climate, aes(x = precip)) +
+  geom_histogram(fill = "#b52b8c",
+                 color = "#faf7f5") +
+  labs(x = "Rainfall (mm)",
+       y = "Count",
+       title = "Average Monthly Rainfall in Colombia")
+precip_histogram
+
+#temperature histogram
+temp_histogram <- ggplot(data = colombia_climate, aes(x = temperature)) + 
+  geom_histogram(fill = "#32a8a8",
+                 color = "#faf7f5") +
+  labs(x= "Temperature (C)",
+       y = "Count",
+       title = "Average Monthly Temperature in Colombia")
+temp_histogram
+
+mean(colombia_climate$temperature)
+median(colombia_climate$temperature)
+
+mean(colombia_climate$precip)
+median(colombia_climate$precip)
+```
+
+## Question 2.2
+
+Given your answers to 2.1 above, do you expect the mean of temperature to differ from the median? Is it likely to be about the same, smaller, or larger? What about precipitation?
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\--
+
+**I would expect the mean of the precipitation to differ from the median and would estimate that the mean would be larger than the median. This is because the median is affected by the position and for this data while the mean is an average. Thus, the mean is more affected by the long narrow tail to the right of the mode than the median is affected by it. Thus, since these are values of higher rainfall, the mean would higher than the median.**
+
+**For temperature, I would expect the mean and the median to be about the same as the tail is less narrow meaning there is a higher count of temperature values above the mode. Thus, the median and mean would be similarly affected by these values.**
+
+## Question 2.3
+
+Anthropogenic climate change is expected to raise temperatures across Colombia, increase total precipitation, and increase variability in precipitation. Compute the mean, the median, and the standard deviation of each climate variable in:
+
+-   All years before and including 2005
+-   All years after 2005
+
+Put your summary statistics into a table (or two tables, whatever is easiest). Are the changes you see between the pre-2005 and post-2005 periods consistent with climate change? Explain why.
+
+**As standard deviation shows variance, the increase of the standard deviation from 215.7 before and including 2005 to 252.7 after 2005 is consistent with climate change. However, the average temperature stayed consistent at 20.1 degrees Celsius before 2005 and after 2005 as well as the median temperature at 19.0. This is not consistent with climate change.**
+
+```{r, fig.fullwidth=TRUE, fig.height=4, message=FALSE, warning=FALSE}
+
+#creating separate dataframes for data pre-2006 (since it is including 2005) abd post 2005
+colombia_climate_pre2005 <- filter(colombia_climate, year <= 2005)
+colombia_climate_post2005 <- filter(colombia_climate, year > 2005)
+
+# summary stats for pre 2005 precipitation
+mean_pre2005_precip <- mean(colombia_climate_pre2005$precip)
+med_pre2005_precip <- median(colombia_climate_pre2005$precip)
+sd_pre2005_precip <- sd(colombia_climate_pre2005$precip)
+
+# summary stats for pre 2005 temperature
+mean_pre2005_temp <- mean(colombia_climate_pre2005$temperature)
+med_pre2005_temp <- median(colombia_climate_pre2005$temperature)
+sd_pre2005_temp <- sd(colombia_climate_pre2005$temperature)
+
+# summary stats for post 2005 precipitation
+mean_post2005_precip <- mean(colombia_climate_post2005$precip)
+med_post2005_precip <- median(colombia_climate_post2005$precip)
+sd_post2005_precip <- sd(colombia_climate_post2005$precip)
+
+# summary stats for pre 2005 temperature
+mean_post2005_temp <- mean(colombia_climate_post2005$temperature)
+med_post2005_temp <- median(colombia_climate_post2005$temperature)
+sd_post2005_temp <- sd(colombia_climate_post2005$temperature)
+
+#concatinating the values for each year and variable
+pre2005_precip <- c(mean_pre2005_precip, med_pre2005_precip, sd_pre2005_precip)
+pre2005_temp <- c(mean_pre2005_temp, med_pre2005_temp, sd_pre2005_temp)
+post2005_precip <- c(mean_post2005_precip, med_post2005_precip, sd_post2005_precip)
+post2005_temp <- c(mean_post2005_temp, med_post2005_temp, sd_post2005_temp)
+
+#creating the row names for the values
+values <- (c("mean", "median", "standard deviation"))
+
+#combining in a dataframe and then producing a table for the precipitation varibale
+table_rainfall <- data.frame(values, pre2005_precip, post2005_precip) %>% 
+  gt
+table_rainfall
+
+#combining in a dataframe and then producing a table for the precipitation varibale
+table_temperature <- data.frame(values, pre2005_temp, post2005_temp) %>% 
+  gt
+table_temperature
+
+```
+
+## Question 2.4
+
+The histograms and summary statistics should make you concerned that these data are not normally distributed. As we will show later in the course, it's often very helpful to have normally distributed data before we do things like linear regressions or hypothesis testing. Here, let's use a Q-Q plot to assess the normality of our sample data.
+
+-   Use `geom_qq()` and `geom_qq_line()` in `ggplot2` to make a Q-Q plot for each variable.[^5]
+
+-   What do you conclude about the normality of these two variables?
+
+[^5]: `geom_qq_line()` lets you draw a line indicating where the sample quantiles would lie if the data were normally distributed.
+
+```{r, message=FALSE, warning=FALSE}
+
+qq_temp <- ggplot(data = colombia_climate, aes(sample = temperature)) +
+  geom_qq() +
+  geom_qq_line()
+qq_temp
+
+qq_precip <- ggplot(data = colombia_climate, aes(sample = precip)) +
+  geom_qq() +
+  geom_qq_line()
+qq_precip
+```
+
+**Looking at the two Q-Q plots I would conclude that neither of the temperature or precipitation data collected is normal.**
+
+## Question 2.5
+
+When our sample observations are not normally distributed, we often rely on nonlinear transformations[^6] to reshape our data. If we compute a nonlinear transformation on our underlying data and they then look closer to normal, we can use this transformed version of our variable in later statistical analysis.
+
+[^6]: Any mathematical operation that is a nonlinear function of the underlying variable can be considered a "nonlinear transformation". For example, $x^2$ and $log(x)$ are both nonlinear transformations.
+
+Because we tend to see a lot of variables in the world that follow the log normal distribution, a very common nonlinear transformation is the natural logarithm. Transform the precipitation data by taking the natural logarithm. Then remake your Q-Q plot -- does your variable (defined as `log(precip)`) now look closer to normally distributed? What can you learn about where the data diverge from the normal distribution?
+
+```{r, message=FALSE, warning=FALSE}
+
+log_data <- colombia_climate |> 
+  mutate(log_precip = log(precip)) |> 
+  mutate(log_temp = log(temperature))
+
+qq_precip_log <- ggplot(data = log_data, 
+                    aes(sample = log_precip)) +
+  geom_qq() +
+  geom_qq_line()
+
+qq_precip_log
+```
+
+**The precipitation variable when applied the log function looks closer to being normally distributed especially from when x is in between -1.25 and 3.75. We can see that the data diverged from the normal distribution when the log of precipitation is lower than -1.25.**
+
+**Thus, we can conclude that the left tail of both distributions do not align with each other and actual data will have higher counts for values with lower precipitation. Therefore, will have a lower value at lower percentiles.**
